@@ -42,7 +42,8 @@ def run_pose_estimation(
         results = yolo_model(frame_rgb)
 
         # use YOLO plot for nice bounding boxes
-        annotated_frame = results[0].plot()
+        if show_yolo_bboxes:
+            annotated_frame = results[0].plot()
 
         # process pose estimation on each detected person's bbox
         for detection in results[0].boxes:
@@ -62,13 +63,20 @@ def run_pose_estimation(
                     mp.solutions.drawing_utils.DrawingSpec(color=(0,255,0), thickness=2, circle_radius=2),
                     mp.solutions.drawing_utils.DrawingSpec(color=(0,0,255), thickness=2, circle_radius=2)
                 )
-            # Place annotated person ROI back in the full image
-            annotated_frame[bbox[1]:bbox[3], bbox[0]:bbox[2]] = person_roi
 
-        # revert to BGR for display
-        annotated_frame = cv2.cvtColor(annotated_frame, cv2.COLOR_RGB2BGR)
+            # draw pose estimation onto images with/without yolo bboxes
+            if show_yolo_bboxes:
+                annotated_frame[bbox[1]:bbox[3], bbox[0]:bbox[2]] = person_roi
+                annotated_frame = cv2.cvtColor(annotated_frame, cv2.COLOR_RGB2BGR)
+            else:
+                frame_rgb[bbox[1]:bbox[3], bbox[0]:bbox[2]] = person_roi
+                frame_rgb = cv2.cvtColor(frame_rgb, cv2.COLOR_RGB2BGR)
+
         # show preds in window
-        cv2.imshow("YOLOv8n Detection with Pose Estimation", annotated_frame)
+        if show_yolo_bboxes:
+            cv2.imshow("YOLOv8n Detection with Pose Estimation", annotated_frame)
+        else:
+            cv2.imshow("YOLOv8n Detection with Pose Estimation", frame_rgb)
 
         # quit
         # run at regular speed
@@ -80,6 +88,7 @@ def run_pose_estimation(
 
 
 if __name__ == '__main__':
+    # suppress yolo per-frame logging
     logging.getLogger('ultralytics').setLevel(logging.WARNING)
 
     # runtime configs
@@ -91,4 +100,11 @@ if __name__ == '__main__':
         enable_segmentation=False,
         min_detection_confidence=0.5
     )
-    run_pose_estimation(yolo_model, pose_model, 1)
+
+    # run the model
+    run_pose_estimation(
+        yolo_model,
+        pose_model,
+        "videos/IMG_1630.MOV",
+        show_yolo_bboxes=True
+    )
