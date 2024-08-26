@@ -8,12 +8,14 @@ import logging
 import mediapipe as mp
 import torch
 from ultralytics import YOLO
+from ultralytics.engine.results import Results
 
 
 def run_pose_estimation(
         yolo_model: YOLO,
         pose_model: mp.solutions.pose.Pose,
         video_path: str,
+        device: str = "cpu",
         start_frame: int = None,
         show_yolo_bboxes: bool = False
     ) -> None:
@@ -39,7 +41,7 @@ def run_pose_estimation(
         # get RGB frame
         frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         # YOLO detection
-        results = yolo_model(frame_rgb)
+        results: list[Results] = yolo_model(frame_rgb)
 
         # use YOLO plot for nice bounding boxes
         if show_yolo_bboxes:
@@ -47,35 +49,39 @@ def run_pose_estimation(
 
         # process pose estimation on each detected person's bbox
         for detection in results[0].boxes:
-            bbox = detection.xyxy[0].cpu().numpy().astype(int)
-            person_roi = frame_rgb[bbox[1]:bbox[3], bbox[0]:bbox[2]]
+            # TODO: only process the bbox if its a person detection
+            if detection.cls.item() == 0.:
+                bbox = detection.xyxy[0].cpu().numpy().astype(int)
+                person_roi = frame_rgb[bbox[1]:bbox[3], bbox[0]:bbox[2]]
 
-            # pose estimation
-            person_roi_rgb = cv2.cvtColor(person_roi, cv2.COLOR_BGR2RGB)
-            result = pose_model.process(person_roi_rgb)
+                # pose estimation
+                person_roi_rgb = cv2.cvtColor(person_roi, cv2.COLOR_BGR2RGB)
+                result = pose_model.process(person_roi_rgb)
 
-            # draw pose landmarks
-            if result.pose_landmarks:
-                mp.solutions.drawing_utils.draw_landmarks(
-                    person_roi,
-                    result.pose_landmarks,
-                    mp.solutions.pose.POSE_CONNECTIONS,
-                    mp.solutions.drawing_utils.DrawingSpec(color=(0,255,0), thickness=2, circle_radius=2),
-                    mp.solutions.drawing_utils.DrawingSpec(color=(0,0,255), thickness=2, circle_radius=2)
-                )
+                # draw pose landmarks
+                if result.pose_landmarks:
+                    mp.solutions.drawing_utils.draw_landmarks(
+                        person_roi,
+                        result.pose_landmarks,
+                        mp.solutions.pose.POSE_CONNECTIONS,
+                        mp.solutions.drawing_utils.DrawingSpec(color=(0,255,0), thickness=2, circle_radius=2),
+                        mp.solutions.drawing_utils.DrawingSpec(color=(0,0,255), thickness=2, circle_radius=2)
+                    )
 
-            # draw pose estimation onto images with/without yolo bboxes
-            if show_yolo_bboxes:
-                annotated_frame[bbox[1]:bbox[3], bbox[0]:bbox[2]] = person_roi
-                annotated_frame = cv2.cvtColor(annotated_frame, cv2.COLOR_RGB2BGR)
-            else:
-                frame_rgb[bbox[1]:bbox[3], bbox[0]:bbox[2]] = person_roi
-                frame_rgb = cv2.cvtColor(frame_rgb, cv2.COLOR_RGB2BGR)
+                # draw pose estimation onto images with/without yolo bboxes
+                if show_yolo_bboxes:
+                    annotated_frame[bbox[1]:bbox[3], bbox[0]:bbox[2]] = person_roi
+                    
+                else:
+                    frame_rgb[bbox[1]:bbox[3], bbox[0]:bbox[2]] = person_roi
+                
 
         # show preds in window
         if show_yolo_bboxes:
+            annotated_frame = cv2.cvtColor(annotated_frame, cv2.COLOR_RGB2BGR)
             cv2.imshow("YOLOv8n Detection with Pose Estimation", annotated_frame)
         else:
+            frame_rgb = cv2.cvtColor(frame_rgb, cv2.COLOR_RGB2BGR)
             cv2.imshow("YOLOv8n Detection with Pose Estimation", frame_rgb)
 
         # quit
@@ -100,11 +106,13 @@ if __name__ == '__main__':
         enable_segmentation=False,
         min_detection_confidence=0.5
     )
+    video_path = "videos/myra.mp4"
 
     # run the model
     run_pose_estimation(
         yolo_model,
         pose_model,
-        "videos/IMG_1630.MOV",
+        video_path,
+        device=device,
         show_yolo_bboxes=True
     )
