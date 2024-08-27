@@ -1,5 +1,5 @@
 """
-Run an Ultralytics YOLOv8 segmentation model on a video.
+Run the mediapipe pose estimation model on a video.
 """
 
 # frameworks
@@ -11,7 +11,7 @@ from ultralytics import YOLO
 from ultralytics.engine.results import Results
 
 
-def run_pose_estimation(
+def run_mediapipe_pose_estimation(
         yolo_model: YOLO,
         pose_model: mp.solutions.pose.Pose,
         video_path: str,
@@ -106,10 +106,10 @@ if __name__ == '__main__':
         enable_segmentation=False,
         min_detection_confidence=0.5
     )
-    video_path = "videos/myra.mp4"
+    video_path = "videos/steph_curry.mp4"
 
     # run the model
-    run_pose_estimation(
+    run_mediapipe_pose_estimation(
         yolo_model,
         pose_model,
         video_path,
