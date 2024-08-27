@@ -49,7 +49,7 @@ def run_mediapipe_pose_estimation(
 
         # process pose estimation on each detected person's bbox
         for detection in results[0].boxes:
-            # TODO: only process the bbox if its a person detection
+            # only process the bbox if its a person detection
             if detection.cls.item() == 0.:
                 bbox = detection.xyxy[0].cpu().numpy().astype(int)
                 person_roi = frame_rgb[bbox[1]:bbox[3], bbox[0]:bbox[2]]
