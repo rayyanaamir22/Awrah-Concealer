@@ -11,6 +11,10 @@ import torch
 from ultralytics import YOLO
 from ultralytics.engine.results import Results
 
+# frameworks for utils that couldn't import
+from deepface import DeepFace
+import numpy as np
+
 # utils
 # FIXME: doesn't let me import directly idky
 #from utils.mediapipe_concealer import draw_rectangles_on_pose
@@ -80,6 +84,7 @@ def draw_rectangles_on_pose(person_roi, pose_landmarks, color=(255, 0, 0)):
     for part, (start, end) in body_parts.items():
         rect_width = 20  # thickness of drawn rectangles
         draw_rectangle(start, end, rect_width)
+#from utils.gender_classification import classify_gender
 
 
 def run_mediapipe_pose_estimation(
@@ -99,7 +104,7 @@ def run_mediapipe_pose_estimation(
     """
     # load video
     cap = cv2.VideoCapture(video_path)
-    if start_frame is not None:
+    if start_frame:
         cap.set(cv2.CAP_PROP_POS_FRAMES, start_frame)
     print("Video loaded.")
 
@@ -148,6 +153,9 @@ def run_mediapipe_pose_estimation(
                         result.pose_landmarks,
                         color=(33,153,9)  # Muslim green lol
                     )
+
+                    # gender prediction
+                    #classify_gender(person_roi_rgb, verbose=True)
 
                 # draw pose estimation onto images with/without yolo bboxes
                 if show_yolo_bboxes:
