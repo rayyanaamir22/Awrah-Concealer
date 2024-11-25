@@ -12,7 +12,7 @@ from ultralytics import YOLO
 from ultralytics.engine.results import Results
 
 # frameworks for utils that couldn't import
-from deepface import DeepFace
+#from deepface import DeepFace
 import numpy as np
 
 # utils

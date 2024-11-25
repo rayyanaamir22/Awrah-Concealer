@@ -7,6 +7,7 @@ import cv2
 import mediapipe as mp
 import numpy as np
 
+
 def draw_rectangles_on_pose(person_roi, pose_landmarks, color=(255, 0, 0)):
     """
     Draws rectangles over arms, legs, and torso based on the pose landmarks.
@@ -73,3 +74,23 @@ def draw_rectangles_on_pose(person_roi, pose_landmarks, color=(255, 0, 0)):
     for part, (start, end) in body_parts.items():
         rect_width = 20  # thickness of drawn rectangles
         draw_rectangle(start, end, rect_width)
+
+
+
+# ======================  NOT TESTED  ======================
+
+def calculate_3d_angle(vec1, vec2):
+    cos_theta = np.dot(vec1, vec2) / (np.linalg.norm(vec1) * np.linalg.norm(vec2))
+    return np.degrees(np.arccos(cos_theta))
+
+
+def apply_clothing_template(person_roi, template, body_vector, position, angle):
+    # Rotate the template
+    rows, cols, _ = template.shape
+    rotation_matrix = cv2.getRotationMatrix2D((cols // 2, rows // 2), angle, 1.0)
+    rotated_template = cv2.warpAffine(template, rotation_matrix, (cols, rows))
+
+    # Overlay the rotated template on the person's body
+    x, y = position
+    h, w, _ = rotated_template.shape
+    person_roi[y:y+h, x:x+w] = cv2.addWeighted(person_roi[y:y+h, x:x+w], 0.5, rotated_template, 0.5, 0)
